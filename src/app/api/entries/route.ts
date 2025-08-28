@@ -1,36 +1,39 @@
 // src/app/api/entries/route.ts
 import { NextResponse } from "next/server";
-import { entries, type Entry } from "@/lib/store";
+import { prisma } from "@/lib/db";
+import { CreateEntrySchema } from "@/lib/validation";
 
 export async function GET() {
-  // Return entries newest-first
-  const list = [...entries].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const list = await prisma.entry.findMany({
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json({ entries: list });
 }
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
+  try {
+    const json = await req.json();
+    const parsed = CreateEntrySchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
 
-  // Simple validation (we'll add Zod later)
-  const transcript = typeof body?.transcript === "string" ? body.transcript.trim() : "";
-  if (!transcript) {
-    return NextResponse.json({ error: "transcript is required" }, { status: 400 });
+    const { transcript } = parsed.data;
+
+    // MOCK rewrite for now (we'll swap in OpenAI soon)
+    const draft = `Here’s what I’m really trying to say:\n\n${transcript}`;
+
+    const entry = await prisma.entry.create({
+      data: {
+        source: "typed",
+        transcript,
+        draft,
+      },
+    });
+
+    return NextResponse.json({ entry }, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  // MOCK rewrite: this is where the AI call will go later
-  const draft = `Here’s what I’m really trying to say:\n\n${transcript}`;
-
-  const entry: Entry = {
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    source: "typed",
-    transcript,
-    draft,
-  };
-
-  entries.push(entry);
-
-  return NextResponse.json({ entry }, { status: 201 });
 }
