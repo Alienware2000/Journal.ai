@@ -35,6 +35,11 @@ export default function RootLayout({
           </div>
         </nav>
         {children}
+        <footer className="border-t mt-6">
+          <div className="max-w-2xl mx-auto p-3 text-sm opacity-70">
+            &copy; {new Date().getFullYear()} Voice Journal
+          </div>
+        </footer>
       </body>
     </html>
   );
