@@ -13,14 +13,14 @@ export default async function DashboardPage() {
         <p className="opacity-70">No entries yet. Create one on the “New Entry” page.</p>
       ) : (
         <ul className="space-y-3">
-          {list.map((e) => (
-            <li key={e.id} className="border rounded p-3">
-              <div className="text-sm opacity-70">
-                {new Date(e.createdAt).toLocaleString()}
-              </div>
-              <div className="font-medium mt-1">Draft</div>
-              <p className="whitespace-pre-wrap">{e.draft}</p>
-            </li>
+          {list.map((e) => (       
+        <li key={e.id} className="border rounded p-3">
+          <div className="text-sm opacity-70">{new Date(e.createdAt).toLocaleString()}</div>
+          <div className="font-medium mt-1">
+            <a className="underline" href={`/entries/${e.id}`}>Open entry</a>
+          </div>
+          <p className="whitespace-pre-wrap mt-2">{e.draft}</p>
+        </li>
           ))}
         </ul>
       )}

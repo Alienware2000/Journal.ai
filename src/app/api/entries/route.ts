@@ -2,13 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CreateEntrySchema } from "@/lib/validation";
-
-export async function GET() {
-  const list = await prisma.entry.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json({ entries: list });
-}
+import { rewriteDraft } from "@/lib/ai";
 
 export async function POST(req: Request) {
   try {
@@ -20,8 +14,15 @@ export async function POST(req: Request) {
 
     const { transcript } = parsed.data;
 
-    // MOCK rewrite for now (we'll swap in OpenAI soon)
-    const draft = `Here’s what I’m really trying to say:\n\n${transcript}`;
+    // Try AI rewrite, but don't fail the whole request if it errors.
+    let draft: string;
+    try {
+      draft = await rewriteDraft(transcript);
+    } catch (e) {
+      console.error("[rewrite error]", e);
+      // Fallback: a safe deterministic draft
+      draft = `Here’s what I’m really trying to say:\n\n${transcript}`;
+    }
 
     const entry = await prisma.entry.create({
       data: {
